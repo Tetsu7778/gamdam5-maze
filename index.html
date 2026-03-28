@@ -428,6 +428,52 @@
     position:absolute; inset:0; pointer-events:none;
     background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 4px);
   }
+  /* ── TAP TO START (音声許可) ── */
+  #tapScreen {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    z-index: 300;
+    background: #000;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 20px;
+    cursor: pointer;
+  }
+  #tapScreen .tap-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(10px, 2vw, 15px);
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: rgba(74,240,255,0.6);
+    text-transform: uppercase;
+  }
+  #tapScreen .tap-title {
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: clamp(22px, 5vw, 42px);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 20px rgba(200,220,255,0.4);
+  }
+  #tapScreen .tap-prompt {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(11px, 2vw, 16px);
+    letter-spacing: 0.25em;
+    color: var(--glow-blue);
+    text-shadow: 0 0 16px var(--glow-blue);
+    animation: tapBlink 1.2s ease-in-out infinite;
+    margin-top: 24px;
+  }
+  @keyframes tapBlink {
+    0%,100%{ opacity: 0.3; } 50%{ opacity: 1; }
+  }
+  #tapScreen .tap-icon {
+    font-size: clamp(40px, 8vw, 72px);
+    animation: tapFloat 2s ease-in-out infinite;
+  }
+  @keyframes tapFloat {
+    0%,100%{ transform: translateY(0); }
+    50%{ transform: translateY(-10px); }
+  }
 </style>
 </head>
 <body>
@@ -485,6 +531,14 @@
   <div class="msg-sub" id="msgSub"></div>
   <div class="msg-stats" id="msgStats"></div>
   <button class="btn-restart" id="btnRestart">▶ RESTART</button>
+</div>
+
+<!-- TAP TO START -->
+<div id="tapScreen">
+  <div class="tap-logo">MOBILE SUIT GAMDAM III</div>
+  <div class="tap-title">めぐり宇宙</div>
+  <div class="tap-icon">🤖</div>
+  <div class="tap-prompt">— CLICK TO START —</div>
 </div>
 
 <!-- INTRO OVERLAY -->
@@ -1834,7 +1888,28 @@ function loop(timestamp) {
 }
 
 // Start with intro on first load
-startIntro();
+// Wait for user click (browser audio policy requires user gesture)
+const tapScreen = document.getElementById('tapScreen');
+
+// Draw tap screen starfield while waiting
+let tapStarT = 0;
+function tapLoop(ts) {
+  tapStarT = ts;
+  drawStarfield(ts);
+  if (tapScreen.style.display !== 'none') requestAnimationFrame(tapLoop);
+}
+requestAnimationFrame(tapLoop);
+
+tapScreen.addEventListener('click', () => {
+  tapScreen.style.transition = 'opacity 0.5s';
+  tapScreen.style.opacity = '0';
+  tapScreen.style.pointerEvents = 'none';
+  setTimeout(() => {
+    tapScreen.style.display = 'none';
+    startIntro();          // ← ここで音声も同時スタート
+  }, 500);
+});
+
 requestAnimationFrame(loop);
 </script>
 </body>
